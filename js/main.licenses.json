@@ -1,0 +1,75 @@
+{
+  "bundle": "js/main.js",
+  "bundleSha256": "a6891ee8e028b82347dc0f81e4a79c9a8690d92d7a6832914c45bac9bebe2575",
+  "bundleNotices": "js/main.js.LICENSE.txt",
+  "bundleNoticesSha256": "59deb1beefe8a57745c00f213c7210de2091cba204db874218075cd48fe43069",
+  "lockSha256": "f7744aacd530253ae748b5a0732a97085d1c97aa6002e9b5005eabd4ecfe4216",
+  "packages": [
+    {
+      "path": "node_modules/@nextcloud/auth",
+      "name": "@nextcloud/auth",
+      "version": "2.6.0",
+      "integrity": "sha512-VkT87+9UqpPi7O36bVEE4/MxWF8d90VQcuMlvKltsZyLSLkEGrPXgowtD75Y54k60/8SR6mXbeqBwapi8dDUbA=="
+    },
+    {
+      "path": "node_modules/@nextcloud/browser-storage",
+      "name": "@nextcloud/browser-storage",
+      "version": "0.5.0",
+      "integrity": "sha512-usYr4GlJQlK3hgZURvklqWb9ivi7sgsSuFqXrs7s4hl1LTS4enzPrnkQumm6nRsQruf0ITS+OBsK+oELEbvYPA=="
+    },
+    {
+      "path": "node_modules/@nextcloud/event-bus",
+      "name": "@nextcloud/event-bus",
+      "version": "3.3.3",
+      "integrity": "sha512-zIfvKmUGkXpVzRKoXrcO9hkoiKDm65fqNxy/XIbIxrQhZByPq3gDkjBpnu3V5Gs8JdYwa73R8DjzV9oH8HYhIg=="
+    },
+    {
+      "path": "node_modules/@nextcloud/files",
+      "name": "@nextcloud/files",
+      "version": "4.1.1",
+      "integrity": "sha512-3fvaBNObXFjVgFm0FvPXr+rtYh2CUGAc0+98dhIP0AC7Q+UCVYIwyB3tsSBGP29HnqGWqGRY7nZaj7gI7NzbvQ=="
+    },
+    {
+      "path": "node_modules/@nextcloud/initial-state",
+      "name": "@nextcloud/initial-state",
+      "version": "3.0.0",
+      "integrity": "sha512-cV+HBdkQJGm8FxkBI5rFT/FbMNWNBvpbj6OPrg4Ae4YOOsQ15CL8InPOAw1t4XkOkQK2NEdUGQLVUz/19wXbdQ=="
+    },
+    {
+      "path": "node_modules/@nextcloud/l10n",
+      "name": "@nextcloud/l10n",
+      "version": "3.4.1",
+      "integrity": "sha512-aTFinTcKiK2gEXwLgutXekpZZ8/v/4QiC8C3QCLH5m0o+WtxsBC+fqV142ebC/rfDnzCLhY4ZtswSu8bFbZocg=="
+    },
+    {
+      "path": "node_modules/@nextcloud/logger",
+      "name": "@nextcloud/logger",
+      "version": "3.0.3",
+      "integrity": "sha512-TcbVRL4/O5ffI1RXFmQAFD3gwwT15AAdr1770x+RNqVvfBdoGVyhzOwCIyA5Vfc3fA1iJXFa+rE6buJZSoqlcw=="
+    },
+    {
+      "path": "node_modules/@nextcloud/sharing",
+      "name": "@nextcloud/sharing",
+      "version": "0.4.0",
+      "integrity": "sha512-1hUNyc7uJdBpnimOnEshJjEtAPAjzDYVl6qmWqF5ZxoN9wOvbExw0QjX3xFIbHbX2dmvbRNLBj0RzLzipmZyeg=="
+    },
+    {
+      "path": "node_modules/dompurify",
+      "name": "dompurify",
+      "version": "3.4.17",
+      "integrity": "sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w=="
+    },
+    {
+      "path": "node_modules/escape-html",
+      "name": "escape-html",
+      "version": "1.0.3",
+      "integrity": "sha512-NiSupZ4OeuGwr68lGIeym/ksIZMJodUGOSCZ/FSnTxcrekbvqrgdUxlJOMpijaKZVjAJrWrGs/6Jy8OMuyj9ow=="
+    },
+    {
+      "path": "node_modules/semver",
+      "name": "semver",
+      "version": "7.8.6",
+      "integrity": "sha512-9lpSSU4Mly3mrtruwLs1eLK6+gzbzqeBFwRNjIjE+9LuDpWdYctrQlQ3ej1Ilgi7gknpsTRnPoLP8DpCHqHIJw=="
+    }
+  ]
+}

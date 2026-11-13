@@ -1,0 +1,32 @@
+name: Validate
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  app:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run build
+      - name: Generated bundles are committed
+        run: git diff --exit-code -- js/main.js js/main.js.LICENSE.txt js/main.licenses.json THIRD_PARTY_LICENSES.txt tests/fixture.js tests/fixture.js.LICENSE.txt
+      - run: php -l lib/AppInfo/Application.php
+      - run: npm run package
+      - uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-files-launcher-candidate
+          path: build/*
+          retention-days: 7

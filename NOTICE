@@ -1,0 +1,7 @@
+Files Launcher
+
+The initial 0.1.0 app metadata identified its author as SAB. This attribution is
+retained for the extracted implementation. Standalone maintenance and subsequent
+contributions are recorded in this repository's Git history.
+
+License: AGPL-3.0-or-later. Dependency notices: js/main.js.LICENSE.txt.

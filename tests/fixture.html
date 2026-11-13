@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Files Launcher fixture</title><link rel="stylesheet" href="../css/launcher.css"><style>
+:root{--color-main-background:#25292f;--color-main-text:#e7edf5;--color-text-maxcontrast:#a3afbf;--color-border:#454e5b;--color-border-dark:#596779;--color-background-hover:#2f3640;--color-primary-element:#287db3;--color-primary-element-text:#fff;--color-primary-element-light:#324b61;font-family:system-ui,sans-serif;color:#e7edf5;background:#181c22}body{margin:0}header{background:#142235;padding:22px 30px;font-weight:650}main{padding:28px}p{font-size:13px;color:#9aaabd}form[data-cy-upload-picker]{display:inline-block}.standard{padding:10px 16px}.fixture-table{margin-top:35px;padding:24px;border-top:1px solid #384452;color:#9aaabd}.fixture-table div{padding:20px 0;border-bottom:1px solid #303b48}.fixture-backdrop{position:fixed;inset:0;background:#0007;z-index:2200;display:grid;place-items:center}.fixture-modal{width:360px;max-width:calc(100vw - 32px);padding:25px;background:#252f3b;border:1px solid #61718a;border-radius:14px}.fixture-modal h2{font-size:18px}.fixture-modal input{display:block;box-sizing:border-box;width:100%;padding:12px;margin:18px 0;color:#fff;background:#172230;border:1px solid #6d88a5;border-radius:8px}.fixture-modal button{padding:9px 14px;margin-right:8px;border:1px solid #657e98;border-radius:7px;background:#314c68;color:#fff}
+body[data-theme="light"]{--color-main-background:#fff;--color-main-text:#233044;--color-text-maxcontrast:#526176;--color-border:#cbd3df;--color-border-dark:#9aabbd;--color-background-hover:#edf1f6;--color-primary-element-light:#dcecfb;background:#f8fafc;color:#233044;min-height:100vh}
+body[data-theme="light"] header{background:#e8eff7}body[data-theme="light"] p,body[data-theme="light"] .fixture-table{color:#526176}
+body[data-theme="light"] .fixture-modal{background:#fff;color:#233044}#fixture-theme{float:right;padding:6px 12px;border:1px solid #77889d;border-radius:7px;background:transparent;color:inherit}
+</style><script defer src="fixture.js"></script></head><body data-theme="dark">
+<header><span id="fixture-title">Nextcloud / Files Launcher fixture</span><button id="fixture-theme" type="button">Light theme</button> <label>Language <select id="fixture-language"><option value="en">English</option><option value="ja">日本語</option></select></label></header>
+<main>
+<form class="files-list__header-upload-button" data-cy-upload-picker>
+ <div class="action-item action-item--default-popover"><button class="standard" type="button">New (standard entry)</button></div>
+ <input data-cy-upload-picker-input type="file" hidden multiple>
+</form>
+<p id="fixture-status">Local fixture using the production controller and Nextcloud APIs. All data is synthetic.</p>
+<div class="fixture-table"><div>Shared documents</div><div>Work folder</div><div>Meeting notes.docx</div><div>Schedule.xlsx</div></div>
+</main></body></html>
