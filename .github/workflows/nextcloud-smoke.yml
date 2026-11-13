@@ -1,0 +1,52 @@
+name: Nextcloud 33 smoke test
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm run package
+      - name: Install and disable the candidate on disposable Nextcloud 33
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() { docker rm -f files-launcher-smoke >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          pass=$(openssl rand -hex 16)
+          docker run -d --name files-launcher-smoke -p 127.0.0.1:18080:80 \
+            -e SQLITE_DATABASE=nextcloud -e NEXTCLOUD_ADMIN_USER=ciadmin \
+            -e NEXTCLOUD_ADMIN_PASSWORD="$pass" -e NEXTCLOUD_TRUSTED_DOMAINS=127.0.0.1 \
+            'nextcloud:33.0.10-apache@sha256:81cb09055a20142521a267cea2bc27e6a81a065871c70850d209f08803567dbc' >/dev/null
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:18080/status.php 2>/dev/null \
+              | python3 -c 'import json,sys; s=json.load(sys.stdin); sys.exit(0 if s.get("installed") and not s.get("maintenance") else 1)' 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 5
+          done
+          test "$ready" = 1 || { echo 'Nextcloud initialization timed out'; exit 1; }
+          mkdir -p "$RUNNER_TEMP/launcher-package"
+          tar -xzf build/files_launcher-0.2.0.tar.gz -C "$RUNNER_TEMP/launcher-package"
+          docker cp "$RUNNER_TEMP/launcher-package/files_launcher" files-launcher-smoke:/var/www/html/custom_apps/
+          docker exec files-launcher-smoke chown -R www-data:www-data /var/www/html/custom_apps/files_launcher
+          docker exec files-launcher-smoke sh -c 'cd /var/www/html/custom_apps/files_launcher && sha256sum --check SHA256SUMS'
+          docker exec --user www-data -w /var/www/html files-launcher-smoke php occ app:enable files_launcher
+          docker exec --user www-data -w /var/www/html files-launcher-smoke php occ app:list --output=json \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["enabled"].get("files_launcher")=="0.2.0"'
+          curl -fsS http://127.0.0.1:18080/custom_apps/files_launcher/js/main.js -o "$RUNNER_TEMP/served-main.js"
+          test "$(sha256sum js/main.js | cut -d' ' -f1)" = "$(sha256sum "$RUNNER_TEMP/served-main.js" | cut -d' ' -f1)"
+          docker exec --user www-data -w /var/www/html files-launcher-smoke php occ app:disable files_launcher
+          docker exec --user www-data -w /var/www/html files-launcher-smoke php occ app:list --output=json \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); assert "files_launcher" not in d["enabled"]'
