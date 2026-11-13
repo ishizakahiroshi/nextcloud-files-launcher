@@ -6,7 +6,7 @@ Open a nine-dot button to choose the creation actions available in the current f
 
 ## Status
 
-Standalone **0.2.0 is an unpublished release candidate**, with compatibility restricted to **Nextcloud 33**. The original 0.1.0 integration was checked on 33.0.10. Standalone translation and packaging changes require a separate Nextcloud integration check. Nextcloud 34 and 35 are not declared compatible.
+Standalone **0.2.0 is an unreleased candidate**, with compatibility restricted to **Nextcloud 33**. An isolated Nextcloud 33.0.10 installation has verified package installation, enablement, static bundle delivery and disablement. Interactive use of the standalone version on an actual Nextcloud server still needs verification. Nextcloud 34 and 35 are not declared compatible.
 
 ## Features
 

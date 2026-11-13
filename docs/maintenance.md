@@ -1,6 +1,6 @@
 # Compatibility and release checks
 
-The app currently declares Nextcloud 33 only. The original 0.1.0 integration was checked on 33.0.10; standalone 0.2.0 is a local candidate. Nextcloud 34 and 35 have not been verified. Do not widen the manifest range without testing.
+The app currently declares Nextcloud 33 only. The original 0.1.0 integration was checked on 33.0.10. Standalone 0.2.0 was installed, enabled, served and disabled on a disposable 33.0.10 instance using the manually dispatched `nextcloud-smoke.yml` workflow. This smoke check does not exercise interactive UI actions or file creation. Nextcloud 34 and 35 have not been verified. Do not widen the manifest range without testing.
 
 Files entries and handlers use public APIs. UploadPicker DOM selectors, modal classes, route context and events remain integration dependencies. App Store public-API rules require a suitability review of this approach before submission. No approval is claimed.
 
