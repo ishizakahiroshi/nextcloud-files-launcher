@@ -1,12 +1,23 @@
-name: Nextcloud 33 smoke test
+name: Nextcloud smoke test
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   smoke:
+    name: Nextcloud ${{ matrix.major }} smoke test
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - major: '33'
+            image: 'nextcloud:33.0.10-apache@sha256:81cb09055a20142521a267cea2bc27e6a81a065871c70850d209f08803567dbc'
+          - major: '34'
+            image: 'nextcloud:34.0.5-apache@sha256:d8ad0b77c863611b9fab6e72a82a5d35fbcb218b660f9f20fec9941a50806281'
+          - major: '35'
+            image: 'nextcloud:35.0.2-apache@sha256:786c102155d2717ba0f53a62b3fdd7a1354edc48e800b94dbe32294d9a5752a2'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -26,7 +37,7 @@ jobs:
           docker run -d --name files-launcher-smoke -p 127.0.0.1:18080:80 \
             -e SQLITE_DATABASE=nextcloud -e NEXTCLOUD_ADMIN_USER=ciadmin \
             -e NEXTCLOUD_ADMIN_PASSWORD="$pass" -e NEXTCLOUD_TRUSTED_DOMAINS=127.0.0.1 \
-            'nextcloud:33.0.10-apache@sha256:81cb09055a20142521a267cea2bc27e6a81a065871c70850d209f08803567dbc' >/dev/null
+            "${{ matrix.image }}" >/dev/null
           ready=0
           for attempt in $(seq 1 90); do
             if curl -fsS http://127.0.0.1:18080/status.php 2>/dev/null \
@@ -42,6 +53,8 @@ jobs:
           docker cp "$RUNNER_TEMP/launcher-package/files_launcher" files-launcher-smoke:/var/www/html/custom_apps/
           docker exec files-launcher-smoke chown -R www-data:www-data /var/www/html/custom_apps/files_launcher
           docker exec files-launcher-smoke sh -c 'cd /var/www/html/custom_apps/files_launcher && sha256sum --check SHA256SUMS'
+          # Test-copy only: widen max-version to the tested major. The repository manifest is unchanged.
+          docker exec files-launcher-smoke sed -i "s/max-version=\"33\"/max-version=\"${{ matrix.major }}\"/" /var/www/html/custom_apps/files_launcher/appinfo/info.xml
           docker exec --user www-data -w /var/www/html files-launcher-smoke php occ app:enable files_launcher
           docker exec --user www-data -w /var/www/html files-launcher-smoke php occ app:list --output=json \
             | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["enabled"].get("files_launcher")=="0.2.0"'
