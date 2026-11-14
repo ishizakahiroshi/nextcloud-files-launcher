@@ -16,17 +16,17 @@ jobs:
         include:
           - nextcloud: '33.0.10'
             image: 'nextcloud:33.0.10-apache@sha256:81cb09055a20142521a267cea2bc27e6a81a065871c70850d209f08803567dbc'
-            experimental: false
+            build_from_tar: false
           - nextcloud: '34.0.5'
             image: 'nextcloud:34.0.5-apache@sha256:d8ad0b77c863611b9fab6e72a82a5d35fbcb218b660f9f20fec9941a50806281'
             tar_sha256: '04ec3dddf465c9f2c2a9e6ee5f39b818399d4f3d581556f41d0872beeb59b0a9'
-            experimental: true
+            build_from_tar: true
 
           # Official 35.0.3 server tar on the pinned 35.0.2 Docker runtime.
           - nextcloud: '35.0.3'
             image: 'nextcloud:35.0.2-apache@sha256:786c102155d2717ba0f53a62b3fdd7a1354edc48e800b94dbe32294d9a5752a2'
             tar_sha256: '58401440ce81b7f8d445a8c2a8027572b616ef83592f96b121fd15ec8a1aed35'
-            experimental: true
+            build_from_tar: true
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -40,7 +40,7 @@ jobs:
         shell: bash
         env:
           NC_IMAGE: ${{ matrix.image }}
-          NC_EXPERIMENTAL: ${{ matrix.experimental }}
+          NC_BUILD_FROM_TAR: ${{ matrix.build_from_tar }}
           NC_VERSION: ${{ matrix.nextcloud }}
           NC_TAR_SHA256: ${{ matrix.tar_sha256 }}
         run: |
@@ -53,7 +53,7 @@ jobs:
           trap cleanup EXIT
           test_pass=$(openssl rand -hex 16)
           docker pull "$NC_IMAGE" >/dev/null
-          if [ "$NC_EXPERIMENTAL" = true ]; then
+          if [ "$NC_BUILD_FROM_TAR" = true ]; then
             mkdir -p "$RUNNER_TEMP/nc35-image"
             curl --fail --silent --show-error --location \
               "https://download.nextcloud.com/server/releases/nextcloud-${NC_VERSION}.tar.bz2" \
@@ -87,16 +87,6 @@ jobs:
           mkdir -p "$RUNNER_TEMP/launcher-e2e"
           tar -xzf "build/files_launcher-${version}.tar.gz" -C "$RUNNER_TEMP/launcher-e2e"
           (cd "$RUNNER_TEMP/launcher-e2e/files_launcher" && sha256sum --check SHA256SUMS)
-          if [ "$NC_EXPERIMENTAL" = true ]; then
-            # Experimental only: this major version is not declared supported by this package.
-            NC_EXPERIMENTAL_APP="$RUNNER_TEMP/launcher-e2e/files_launcher/appinfo/info.xml" node -e '
-              const fs = require("node:fs"), p = process.env.NC_EXPERIMENTAL_APP;
-              const before = fs.readFileSync(p, "utf8");
-              if ((before.match(/max-version="33"/g) || []).length !== 1) throw Error("Unexpected manifest compatibility range");
-              const major = process.env.NC_VERSION.split(".")[0];
-              if (!["34", "35"].includes(major)) throw Error("Unexpected experimental major version");
-              fs.writeFileSync(p, before.replace("max-version=\"33\"", `max-version="${major}"`));'
-          fi
           docker cp "$RUNNER_TEMP/launcher-e2e/files_launcher" files-launcher-e2e:/var/www/html/custom_apps/
           docker exec files-launcher-e2e chown -R www-data:www-data /var/www/html/custom_apps/files_launcher
           docker exec --user www-data -w /var/www/html files-launcher-e2e php occ app:enable files_launcher

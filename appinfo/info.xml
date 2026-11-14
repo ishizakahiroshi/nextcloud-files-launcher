@@ -12,5 +12,5 @@
   <website>https://github.com/ishizakahiroshi/nextcloud-files-launcher</website>
   <bugs>https://github.com/ishizakahiroshi/nextcloud-files-launcher/issues</bugs>
   <repository type="git">https://github.com/ishizakahiroshi/nextcloud-files-launcher.git</repository>
-  <dependencies><nextcloud min-version="33" max-version="33" /></dependencies>
+  <dependencies><nextcloud min-version="33" max-version="35" /></dependencies>
 </info>
