@@ -66,21 +66,21 @@ jobs:
               --tag files-launcher-nc35-e2e:local "$RUNNER_TEMP/nc35-image"
             NC_IMAGE=files-launcher-nc35-e2e:local
           fi
-          docker network create --internal files-launcher-e2e-network >/dev/null
+          docker network create files-launcher-e2e-network >/dev/null
           docker run -d --name files-launcher-e2e --network files-launcher-e2e-network -p 127.0.0.1:18080:80 \
             -e SQLITE_DATABASE=nextcloud -e NEXTCLOUD_ADMIN_USER=ciadmin \
             -e NEXTCLOUD_ADMIN_PASSWORD="$test_pass" -e NEXTCLOUD_TRUSTED_DOMAINS=127.0.0.1 \
             "$NC_IMAGE" >/dev/null
           ready=0
           for attempt in $(seq 1 90); do
-            if curl -fsS http://127.0.0.1:18080/status.php 2>/dev/null \
+            if curl --max-time 5 -fsS http://127.0.0.1:18080/status.php 2>/dev/null \
               | python3 -c 'import json,sys; s=json.load(sys.stdin); sys.exit(0 if s.get("installed") and not s.get("maintenance") else 1)' 2>/dev/null; then
               ready=1
               break
             fi
             sleep 5
           done
-          test "$ready" = 1 || { echo 'Disposable Nextcloud initialization timed out'; exit 1; }
+          test "$ready" = 1 || { echo '::error::Disposable Nextcloud initialization timed out'; exit 1; }
           docker exec --user www-data -w /var/www/html files-launcher-e2e php occ status --output=json \
             | NC_EXPECTED_VERSION="$NC_VERSION" python3 -c 'import json,os,sys; s=json.load(sys.stdin); assert s["versionstring"] == os.environ["NC_EXPECTED_VERSION"], s["versionstring"]'
           version=$(node -p "require('./package.json').version")
@@ -118,3 +118,4 @@ jobs:
           path: ${{ runner.temp }}/launcher-e2e-results/*.png
           if-no-files-found: ignore
           retention-days: 7
+
