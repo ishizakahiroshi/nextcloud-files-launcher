@@ -1,0 +1,81 @@
+name: Nextcloud disposable app upgrade check
+on:
+  workflow_dispatch:
+  push:
+    branches: [wt/store-compat]
+permissions:
+  contents: read
+jobs:
+  upgrade:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm run package
+      - name: Exercise local package replacement on an isolated instance
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() { docker rm -f files-launcher-upgrade >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          pass=$(openssl rand -hex 16)
+          docker run -d --name files-launcher-upgrade -p 127.0.0.1:18081:80 \
+            -e SQLITE_DATABASE=nextcloud -e NEXTCLOUD_ADMIN_USER=ciadmin \
+            -e NEXTCLOUD_ADMIN_PASSWORD="$pass" -e NEXTCLOUD_TRUSTED_DOMAINS=127.0.0.1 \
+            'nextcloud:33.0.10-apache@sha256:81cb09055a20142521a267cea2bc27e6a81a065871c70850d209f08803567dbc' >/dev/null
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl --max-time 5 -fsS http://127.0.0.1:18081/status.php 2>/dev/null \
+              | python3 -c 'import json,sys; s=json.load(sys.stdin); sys.exit(0 if s.get("installed") and not s.get("maintenance") else 1)' 2>/dev/null; then
+              ready=1; break
+            fi
+            sleep 5
+          done
+          test "$ready" = 1 || { echo '::error::Disposable instance failed to initialize'; exit 1; }
+          root="$RUNNER_TEMP/launcher-upgrade"
+          mkdir -p "$root/old/files_launcher/appinfo" "$root/new"
+          cat > "$root/old/files_launcher/appinfo/info.xml" <<'XML'
+          <?xml version="1.0"?>
+          <info>
+            <id>files_launcher</id><name>Files Launcher</name>
+            <summary>Synthetic upgrade test</summary><description>Synthetic upgrade test</description>
+            <version>0.1.0</version><licence>agpl</licence><author>Test</author>
+            <namespace>FilesLauncher</namespace><category>files</category>
+            <dependencies><nextcloud min-version="33" max-version="33" /></dependencies>
+          </info>
+          XML
+          tar -xzf build/files_launcher-0.2.0.tar.gz -C "$root/new"
+          occ() { docker exec --user www-data -w /var/www/html files-launcher-upgrade php occ "$@"; }
+          replace_app() {
+            # The exact disposable container path is fixed; no real data is mounted.
+            docker exec files-launcher-upgrade rm -rf /var/www/html/custom_apps/files_launcher
+            docker cp "$1/files_launcher" files-launcher-upgrade:/var/www/html/custom_apps/
+            docker exec files-launcher-upgrade chown -R www-data:www-data /var/www/html/custom_apps/files_launcher
+          }
+          version_is() {
+            actual=$(occ config:app:get files_launcher installed_version)
+            test "$actual" = "$1" || { echo "::error::Expected installed version $1, got $actual"; exit 1; }
+            echo "Registered version: $actual"
+          }
+          replace_app "$root/old"
+          occ app:enable files_launcher
+          version_is 0.1.0
+          # Demonstrate the effect of replacing the files while the app remains enabled.
+          replace_app "$root/new"
+          occ app:enable files_launcher
+          version_is 0.1.0
+          # Local replacement: disable first, then enable so Nextcloud installs the app metadata.
+          occ app:disable files_launcher
+          occ app:enable files_launcher
+          version_is 0.2.0
+          occ app:disable files_launcher
+          replace_app "$root/old"
+          occ app:enable files_launcher
+          version_is 0.1.0
+          echo 'Synthetic rollback succeeded only for this app with no migrations or app data.'
