@@ -3,7 +3,7 @@
   "bundleSha256": "a6891ee8e028b82347dc0f81e4a79c9a8690d92d7a6832914c45bac9bebe2575",
   "bundleNotices": "js/main.js.LICENSE.txt",
   "bundleNoticesSha256": "59deb1beefe8a57745c00f213c7210de2091cba204db874218075cd48fe43069",
-  "lockSha256": "f7744aacd530253ae748b5a0732a97085d1c97aa6002e9b5005eabd4ecfe4216",
+  "lockSha256": "74f58f084e7e549c93184da0aa960c5844d44ead4c410baaaded18449935720c",
   "packages": [
     {
       "path": "node_modules/@nextcloud/auth",

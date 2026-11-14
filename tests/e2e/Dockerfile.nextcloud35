@@ -1,0 +1,17 @@
+# Test-only runtime: source tar and base image are pinned and checked in CI.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+ARG NC_VERSION
+ENV NEXTCLOUD_VERSION=${NC_VERSION}
+COPY nextcloud.tar.bz2 /tmp/nextcloud.tar.bz2
+RUN set -eux; \
+    mkdir /tmp/nextcloud-fresh; \
+    tar -xjf /tmp/nextcloud.tar.bz2 -C /tmp/nextcloud-fresh --strip-components=1; \
+    for config in apache-pretty-urls.config.php apcu.config.php apps.config.php autoconfig.php redis.config.php reverse-proxy.config.php s3.config.php smtp.config.php swift.config.php upgrade-disable-web.config.php; do \
+      test -f "/usr/src/nextcloud/config/$config"; \
+      cp -a "/usr/src/nextcloud/config/$config" /tmp/nextcloud-fresh/config/; \
+    done; \
+    mkdir -p /tmp/nextcloud-fresh/data /tmp/nextcloud-fresh/custom_apps; \
+    chmod +x /tmp/nextcloud-fresh/occ; \
+    rm -rf /usr/src/nextcloud /tmp/nextcloud-fresh/updater /tmp/nextcloud.tar.bz2; \
+    mv /tmp/nextcloud-fresh /usr/src/nextcloud
