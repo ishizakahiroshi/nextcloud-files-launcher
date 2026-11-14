@@ -53,8 +53,6 @@ jobs:
           docker cp "$RUNNER_TEMP/launcher-package/files_launcher" files-launcher-smoke:/var/www/html/custom_apps/
           docker exec files-launcher-smoke chown -R www-data:www-data /var/www/html/custom_apps/files_launcher
           docker exec files-launcher-smoke sh -c 'cd /var/www/html/custom_apps/files_launcher && sha256sum --check SHA256SUMS'
-          # Test-copy only: widen max-version to the tested major. The repository manifest is unchanged.
-          docker exec files-launcher-smoke sed -i "s/max-version=\"33\"/max-version=\"${{ matrix.major }}\"/" /var/www/html/custom_apps/files_launcher/appinfo/info.xml
           docker exec --user www-data -w /var/www/html files-launcher-smoke php occ app:enable files_launcher
           docker exec --user www-data -w /var/www/html files-launcher-smoke php occ app:list --output=json \
             | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["enabled"].get("files_launcher")=="0.2.0"'

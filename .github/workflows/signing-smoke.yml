@@ -1,0 +1,92 @@
+name: Disposable signing smoke test
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, wt/store-compat]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  signing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm run package
+      - name: Sign and verify a disposable package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker rm -f files-launcher-signing >/dev/null 2>&1 || true
+            rm -rf "$RUNNER_TEMP/files-launcher-signing"
+          }
+          trap cleanup EXIT
+          umask 077
+          stage="$RUNNER_TEMP/files-launcher-signing"
+          mkdir -p "$stage/unsigned" "$stage/signed" "$stage/check"
+          # The key and certificate exist only on this disposable runner.
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=files_launcher' \
+            -keyout "$stage/test.key" -out "$stage/test.crt" >/dev/null 2>&1
+          openssl x509 -in "$stage/test.crt" -pubkey -noout > "$stage/public.key"
+          pass=$(openssl rand -hex 16)
+          docker run -d --name files-launcher-signing --network none \
+            -e SQLITE_DATABASE=nextcloud -e NEXTCLOUD_ADMIN_USER=ciadmin \
+            -e NEXTCLOUD_ADMIN_PASSWORD="$pass" \
+            'nextcloud:33.0.10-apache@sha256:81cb09055a20142521a267cea2bc27e6a81a065871c70850d209f08803567dbc' >/dev/null
+          ready=0
+          for attempt in $(seq 1 90); do
+            if docker exec --user www-data -w /var/www/html files-launcher-signing php occ status --output=json 2>/dev/null \
+              | python3 -c 'import json,sys; s=json.load(sys.stdin); sys.exit(0 if s.get("installed") and not s.get("maintenance") else 1)' 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 5
+          done
+          test "$ready" = 1 || { echo 'Disposable Nextcloud initialization timed out'; exit 1; }
+          version=$(node -p "require('./package.json').version")
+          tar -xzf "build/files_launcher-${version}.tar.gz" -C "$stage/unsigned"
+          (cd "$stage/unsigned/files_launcher" && sha256sum --check SHA256SUMS)
+          docker cp "$stage/unsigned/files_launcher" files-launcher-signing:/var/www/html/custom_apps/
+          docker cp "$stage/test.key" files-launcher-signing:/tmp/files-launcher-test.key
+          docker cp "$stage/test.crt" files-launcher-signing:/tmp/files-launcher-test.crt
+          docker exec files-launcher-signing chown -R www-data:www-data /var/www/html/custom_apps/files_launcher /tmp/files-launcher-test.key /tmp/files-launcher-test.crt
+          docker exec --user www-data -w /var/www/html files-launcher-signing php occ integrity:sign-app \
+            --path=/var/www/html/custom_apps/files_launcher \
+            --privateKey=/tmp/files-launcher-test.key --certificate=/tmp/files-launcher-test.crt
+          docker cp files-launcher-signing:/var/www/html/custom_apps/files_launcher "$stage/signed/"
+          test -s "$stage/signed/files_launcher/appinfo/signature.json"
+          (cd "$stage/signed/files_launcher" && sha256sum --check SHA256SUMS)
+          # Check the signed list against the actual package and verify the OCC
+          # signature using the same PSS parameters as Nextcloud's checker.
+          python3 - "$stage/signed/files_launcher" "$stage/check" <<'PY'
+          import base64, hashlib, json, pathlib, sys
+          root, out = map(pathlib.Path, sys.argv[1:])
+          signature = json.loads((root / 'appinfo/signature.json').read_text())
+          hashes = signature['hashes']
+          actual = {p.relative_to(root).as_posix(): hashlib.sha512(p.read_bytes()).hexdigest()
+                    for p in root.rglob('*') if p.is_file() and p != root / 'appinfo/signature.json'}
+          if hashes != actual:
+              raise SystemExit('Signed file hashes differ from the staged package')
+          encoded = json.dumps(dict(sorted(hashes.items())), separators=(',', ':'), ensure_ascii=True).replace('/', '\\/')
+          (out / 'hashes.json').write_bytes(encoded.encode())
+          (out / 'signature.bin').write_bytes(base64.b64decode(signature['signature'], validate=True))
+          PY
+          openssl dgst -sha1 -verify "$stage/public.key" -signature "$stage/check/signature.bin" \
+            -sigopt rsa_padding_mode:pss -sigopt rsa_mgf1_md:sha512 -sigopt rsa_pss_saltlen:0 "$stage/check/hashes.json"
+          tar -czf "$stage/files_launcher.tar.gz" -C "$stage/signed" files_launcher
+          openssl dgst -sha512 -sign "$stage/test.key" -out "$stage/archive.sig" "$stage/files_launcher.tar.gz"
+          openssl dgst -sha512 -verify "$stage/public.key" -signature "$stage/archive.sig" "$stage/files_launcher.tar.gz"
+          cp "$stage/files_launcher.tar.gz" "$stage/tampered.tar.gz"
+          printf x >> "$stage/tampered.tar.gz"
+          if openssl dgst -sha512 -verify "$stage/public.key" -signature "$stage/archive.sig" "$stage/tampered.tar.gz" >/dev/null 2>&1; then
+            echo 'A changed archive unexpectedly verified' >&2
+            exit 1
+          fi
+          echo 'Disposable signatures verified; no Nextcloud-issued certificate was used.'

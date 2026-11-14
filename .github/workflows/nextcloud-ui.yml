@@ -1,0 +1,122 @@
+name: Nextcloud real UI validation
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, wt/store-compat]
+permissions:
+  contents: read
+jobs:
+  ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nextcloud: '33.0.10'
+            image: 'nextcloud:33.0.10-apache@sha256:81cb09055a20142521a267cea2bc27e6a81a065871c70850d209f08803567dbc'
+            build_from_tar: false
+          - nextcloud: '34.0.5'
+            image: 'nextcloud:34.0.5-apache@sha256:d8ad0b77c863611b9fab6e72a82a5d35fbcb218b660f9f20fec9941a50806281'
+            tar_sha256: '04ec3dddf465c9f2c2a9e6ee5f39b818399d4f3d581556f41d0872beeb59b0a9'
+            build_from_tar: true
+
+          # Official 35.0.3 server tar on the pinned 35.0.2 Docker runtime.
+          - nextcloud: '35.0.3'
+            image: 'nextcloud:35.0.2-apache@sha256:786c102155d2717ba0f53a62b3fdd7a1354edc48e800b94dbe32294d9a5752a2'
+            tar_sha256: '58401440ce81b7f8d445a8c2a8027572b616ef83592f96b121fd15ec8a1aed35'
+            build_from_tar: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm run package
+      - name: Exercise real Files UI on disposable Nextcloud ${{ matrix.nextcloud }}
+        shell: bash
+        env:
+          NC_IMAGE: ${{ matrix.image }}
+          NC_BUILD_FROM_TAR: ${{ matrix.build_from_tar }}
+          NC_VERSION: ${{ matrix.nextcloud }}
+          NC_TAR_SHA256: ${{ matrix.tar_sha256 }}
+        run: |
+          set -Eeuo pipefail
+          stage='setup'
+          trap 'echo "::error title=Nextcloud UI workflow failed::Stage: $stage"' ERR
+          cleanup() {
+            docker rm -f files-launcher-e2e >/dev/null 2>&1 || true
+            docker network rm files-launcher-e2e-network >/dev/null 2>&1 || true
+            docker image rm files-launcher-nc35-e2e:local >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          test_pass=$(openssl rand -hex 16)
+          stage='pull pinned image'
+          docker pull "$NC_IMAGE" >/dev/null
+          if [ "$NC_BUILD_FROM_TAR" = true ]; then
+            stage='download and verify official server archive'
+            mkdir -p "$RUNNER_TEMP/nc35-image"
+            curl --fail --silent --show-error --location \
+              "https://download.nextcloud.com/server/releases/nextcloud-${NC_VERSION}.tar.bz2" \
+              -o "$RUNNER_TEMP/nc35-image/nextcloud.tar.bz2"
+            # Hashes are pinned from the official releases .sha256 files.
+            printf '%s  nextcloud.tar.bz2\n' "$NC_TAR_SHA256" \
+              | (cd "$RUNNER_TEMP/nc35-image" && sha256sum --check)
+            cp tests/e2e/Dockerfile.nextcloud35 "$RUNNER_TEMP/nc35-image/Dockerfile"
+            stage='build disposable server image'
+            docker build --build-arg BASE_IMAGE="$NC_IMAGE" --build-arg NC_VERSION="$NC_VERSION" \
+              --tag files-launcher-nc35-e2e:local "$RUNNER_TEMP/nc35-image"
+            NC_IMAGE=files-launcher-nc35-e2e:local
+          fi
+          stage='start disposable server'
+          docker network create files-launcher-e2e-network >/dev/null
+          docker run -d --name files-launcher-e2e --network files-launcher-e2e-network -p 127.0.0.1:18080:80 \
+            -e SQLITE_DATABASE=nextcloud -e NEXTCLOUD_ADMIN_USER=ciadmin \
+            -e NEXTCLOUD_ADMIN_PASSWORD="$test_pass" -e NEXTCLOUD_TRUSTED_DOMAINS=127.0.0.1 \
+            "$NC_IMAGE" >/dev/null
+          stage='initialize disposable server'
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl --max-time 5 -fsS http://127.0.0.1:18080/status.php 2>/dev/null \
+              | python3 -c 'import json,sys; s=json.load(sys.stdin); sys.exit(0 if s.get("installed") and not s.get("maintenance") else 1)' 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 5
+          done
+          test "$ready" = 1 || { echo '::error::Disposable Nextcloud initialization timed out'; exit 1; }
+          stage='verify server version'
+          docker exec --user www-data -w /var/www/html files-launcher-e2e php occ status --output=json \
+            | NC_EXPECTED_VERSION="$NC_VERSION" python3 -c 'import json,os,sys; s=json.load(sys.stdin); assert s["versionstring"] == os.environ["NC_EXPECTED_VERSION"], s["versionstring"]'
+          stage='verify and install app package'
+          version=$(node -p "require('./package.json').version")
+          mkdir -p "$RUNNER_TEMP/launcher-e2e"
+          tar -xzf "build/files_launcher-${version}.tar.gz" -C "$RUNNER_TEMP/launcher-e2e"
+          (cd "$RUNNER_TEMP/launcher-e2e/files_launcher" && sha256sum --check SHA256SUMS)
+          docker cp "$RUNNER_TEMP/launcher-e2e/files_launcher" files-launcher-e2e:/var/www/html/custom_apps/
+          docker exec files-launcher-e2e chown -R www-data:www-data /var/www/html/custom_apps/files_launcher
+          docker exec --user www-data -w /var/www/html files-launcher-e2e php occ app:enable files_launcher
+          docker exec --user www-data -w /var/www/html files-launcher-e2e php occ app:list --output=json \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); assert "files_launcher" in d["enabled"]'
+          if docker exec --user www-data -w /var/www/html files-launcher-e2e php occ app:list --output=json \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if "firstrunwizard" in d["enabled"] else 1)'; then
+            docker exec --user www-data -w /var/www/html files-launcher-e2e php occ app:disable firstrunwizard
+          fi
+          stage='run browser test'
+          google-chrome --version
+          NEXTCLOUD_E2E_URL='http://127.0.0.1:18080' NEXTCLOUD_E2E_USER=ciadmin \
+            NEXTCLOUD_E2E_PASSWORD="$test_pass" \
+            npx playwright test --config tests/e2e/playwright.config.cjs --output "$RUNNER_TEMP/launcher-e2e-results"
+          stage='disable app after test'
+          docker exec --user www-data -w /var/www/html files-launcher-e2e php occ app:disable files_launcher
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: nextcloud-ui-${{ matrix.nextcloud }}
+          path: ${{ runner.temp }}/launcher-e2e-results/*.png
+          if-no-files-found: ignore
+          retention-days: 7
+

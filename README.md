@@ -6,7 +6,7 @@ Open a nine-dot button to choose the creation actions available in the current f
 
 ## Status
 
-Standalone **0.2.0 is an unreleased candidate**, with compatibility restricted to **Nextcloud 33**. An isolated Nextcloud 33.0.10 installation has verified package installation, enablement, static bundle delivery and disablement. Interactive use of the standalone version on an actual Nextcloud server still needs verification. Nextcloud 34 and 35 are not declared compatible.
+Standalone **0.2.0 is an unreleased candidate**, declaring compatibility with **Nextcloud 33–35**. Automated browser tests on disposable Nextcloud 33.0.10, 34.0.5 and 35.0.3 instances exercised the launcher, view preference, cancellation, file upload and folder creation. The same checks passed with the compatibility declaration included in the package. The app is not yet published in the App Store.
 
 ## Features
 
@@ -43,7 +43,7 @@ Reload Files and open a folder with creation permission. To return to the native
 
 [View a synthetic Japanese fixture screenshot](docs/screenshots/fixture-ja.jpg). The screenshot does not represent a live server.
 
-The app uses public Files APIs plus DOM hooks into the native UploadPicker and modal classes. Those hooks are a compatibility risk and need a suitability review against App Store rules. Local tests do not establish compatibility with another Nextcloud version or App Store acceptance.
+The app uses public Files APIs plus DOM hooks into the native UploadPicker and modal classes. Those hooks are a compatibility risk and need a suitability review against App Store rules. Tests on specific versions do not establish compatibility with every configuration or App Store acceptance.
 
 See [maintenance and release checks](docs/maintenance.md), [contributing](CONTRIBUTING.md), [security reporting](SECURITY.md) and the [changelog](CHANGELOG.md).
 

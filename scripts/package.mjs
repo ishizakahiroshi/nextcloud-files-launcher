@@ -14,7 +14,7 @@ if (!/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(pkg.version)
   || !info.includes(`<version>${pkg.version}</version>`)) throw new Error('App metadata/version mismatch')
 // Refuse to package a bundle whose full third-party notices are stale or absent.
 await collectLicenses({ root, check: true })
-const files = ['appinfo/info.xml', 'lib/AppInfo/Application.php', 'js/main.js', 'js/main.js.LICENSE.txt', 'css/launcher.css', 'img/app.svg', 'LICENSE', 'NOTICE', 'THIRD_PARTY_LICENSES.txt']
+const files = ['appinfo/info.xml', 'lib/AppInfo/Application.php', 'js/main.js', 'js/main.js.LICENSE.txt', 'css/launcher.css', 'img/app.svg', 'LICENSE', 'NOTICE', 'THIRD_PARTY_LICENSES.txt', 'CHANGELOG.md']
 for (const entry of await readdir(join(root, 'l10n'), { withFileTypes: true })) {
   if (entry.isFile() && /^[a-zA-Z_@-]+\.(js|json)$/.test(entry.name)) files.push(`l10n/${entry.name}`)
 }

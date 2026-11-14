@@ -4,7 +4,7 @@
 
 - Prepare a standalone repository with English source strings and Japanese translation.
 - Add installation packages, checksums, development checks and maintenance documentation.
-- Keep compatibility restricted to Nextcloud 33 pending integration testing.
+- Declare compatibility with Nextcloud 33–35; browser tests cover specific versions of each major release.
 
 ## 0.1.0
 
