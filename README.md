@@ -6,7 +6,7 @@ Open a nine-dot button to choose the creation actions available in the current f
 
 ## Status
 
-Standalone **0.2.0 is an unreleased candidate**, declaring compatibility with **Nextcloud 33–35**. Automated browser tests on disposable Nextcloud 33.0.10, 34.0.5 and 35.0.3 instances exercised the launcher, view preference, cancellation, file upload and folder creation. Those tests temporarily widened the candidate manifest for 34 and 35; the updated compatibility declaration must also pass the tests unmodified. The app is not yet published in the App Store.
+Standalone **0.2.0 is an unreleased candidate**, declaring compatibility with **Nextcloud 33–35**. Automated browser tests on disposable Nextcloud 33.0.10, 34.0.5 and 35.0.3 instances exercised the launcher, view preference, cancellation, file upload and folder creation. The same checks passed with the compatibility declaration included in the package. The app is not yet published in the App Store.
 
 ## Features
 

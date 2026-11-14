@@ -1,6 +1,6 @@
 # Compatibility and release checks
 
-The app declares Nextcloud 33–35. Automated browser tests covered launcher view selection and persistence, cancellation, file upload and folder creation on disposable 33.0.10, 34.0.5 and 35.0.3 servers. The 34 and 35 tests temporarily widened the manifest, so the updated unmodified package must pass the same checks before release. Test any future major version before widening the range.
+The app declares Nextcloud 33–35. Automated browser tests covered launcher view selection and persistence, cancellation, file upload and folder creation on disposable 33.0.10, 34.0.5 and 35.0.3 servers. The same checks also passed with the compatibility declaration included in the unmodified package. Test any future major version before widening the range.
 
 Files entries and handlers use public APIs. UploadPicker DOM selectors, modal classes, route context and events remain integration dependencies. App Store public-API rules require a suitability review of this approach before submission. No approval is claimed.
 
