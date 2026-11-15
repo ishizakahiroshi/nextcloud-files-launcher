@@ -16,7 +16,7 @@ Standalone **0.2.0 is an unreleased candidate**, declaring compatibility with **
 - English interface with Japanese translation. Provider action labels retain their own translations.
 - Keeps the native control when context is unavailable and on public shares.
 
-The app changes the web interface. It does not add a storage service or send files to an external service. Your view preference is stored locally as `files_launcher:view:v1`.
+The app changes the web interface. It does not add a storage service or send files to an external service. Your view preference is stored locally as `files_launcher:view:v2`. Preferences saved under v1 are ignored once to start in icon view; subsequent choices are remembered.
 
 ## Build and install a candidate
 

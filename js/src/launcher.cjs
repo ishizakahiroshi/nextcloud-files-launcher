@@ -3,7 +3,7 @@
 
 const PICKER = '.files-list__header-upload-button[data-cy-upload-picker]'
 const INPUT = 'input[data-cy-upload-picker-input]'
-const STORAGE_KEY = 'files_launcher:view:v1'
+const STORAGE_KEY = 'files_launcher:view:v2'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const MODAL = 'dialog[open], [role="dialog"], [aria-modal="true"], .modal-container, .oc-dialog'
 

@@ -8,6 +8,8 @@ Nextcloudのファイル画面に、コンパクトな作成・アップロー�
 
 標準の作成処理・権限・アップロード入力を利用します。表示形式の好みをブラウザに保存し、公開共有では標準の入口を維持します。
 
+表示設定の保存先をv2へ切り替えました。v1で保存したリスト設定は引き継がず、更新後は一度アイコン表示から始まります。その後に選んだ表示形式は保存されます。
+
 開発環境で `npm ci --ignore-scripts`、`npm test`、`npm run build`、`npm run package` の順に実行します。生成される `build/` のtar.gzとSHA256を確認し、Nextcloudに登録されたcustom_appsへ展開します。フォルダー名は `files_launcher`、所有者はWebサーバーの実行ユーザー、ディレクトリ755・ファイル644に揃えます。
 
 Nextcloud設置ディレクトリで `sudo -u www-data php occ app:enable files_launcher` を実行し、画面を再読込します。無効化は `sudo -u www-data php occ app:disable files_launcher` の後に画面を再読込します。署名済み版をApp Storeへ登録するまでは自動更新されません。

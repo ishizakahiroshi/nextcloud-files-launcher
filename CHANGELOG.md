@@ -2,6 +2,7 @@
 
 ## 0.2.0 — Unreleased
 
+- Reset legacy view preferences once to icon view, then remember subsequent choices.
 - Prepare a standalone repository with English source strings and Japanese translation.
 - Add installation packages, checksums, development checks and maintenance documentation.
 - Declare compatibility with Nextcloud 33–35; browser tests cover specific versions of each major release.

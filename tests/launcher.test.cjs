@@ -16,6 +16,7 @@ function setup(options = {}) {
   let entries = options.entries || [{ id: 'folder', displayName: 'Folder', iconSvgInline: drawing, handler: (...args) => calls.push(args) }]
   const folder = { source: '/remote.php/dav/files/demo/', path: '/', permissions: 31 }
   if (options.storage) window.localStorage.setItem(STORAGE_KEY, options.storage)
+  if (options.legacyStorage) window.localStorage.setItem('files_launcher:view:v1', options.legacyStorage)
   if (options.storageBlocked) Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked') } })
   const launcher = createFilesLauncher({ window, document, getEntries: context => entries.filter(entry => !entry.enabled || entry.enabled(context)), subscribe: (name, fn) => handlers.set(name, fn), unsubscribe: name => handlers.delete(name), isPublic: () => options.public || false, translate: options.translate })
   const update = (nextFolder = folder) => handlers.get('files:list:updated')({ view: { id: 'files' }, folder: nextFolder, contents: [{ basename: 'existing.txt' }] })
@@ -98,6 +99,17 @@ test('mode choice survives reinitialization; unavailable storage does not block 
   const blocked = setup({ storageBlocked: true }); blocked.update(); await flush(); blocked.open(); blocked.document.querySelector('[data-view-choice="list"]').click()
   assert.equal(blocked.document.querySelector('.files-launcher-popover').dataset.view, 'list')
   blocked.launcher.destroy(); blocked.dom.window.close()
+})
+
+test('legacy list preference resets to icons once and a new list preference survives reload', async () => {
+  const app = setup({ legacyStorage: 'list' }); app.update(); await flush(); app.open()
+  assert.equal(app.document.querySelector('.files-launcher-popover').dataset.view, 'grid')
+  app.document.querySelector('[data-view-choice="list"]').click()
+  const saved = app.window.localStorage.getItem(STORAGE_KEY)
+  app.launcher.destroy(); app.dom.window.close()
+  const reloaded = setup({ legacyStorage: 'list', storage: saved }); reloaded.update(); await flush(); reloaded.open()
+  assert.equal(reloaded.document.querySelector('.files-launcher-popover').dataset.view, 'list')
+  reloaded.launcher.destroy(); reloaded.dom.window.close()
 })
 
 test('route navigation invalidates stale folder immediately and restores standard control', async () => {
